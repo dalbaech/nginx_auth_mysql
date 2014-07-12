@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2009 Automattic Inc.
- *
+ * sha1 support added by Daniel Carll (dalbaech) 2014
  * Based on nginx's basic auth module by Igor Sysoev and
  * nginx PAM auth module by  Sergio Talens-Oliag
  *
@@ -10,6 +10,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 #include <ngx_md5.h>
+#include <ngx_sha1.h>
 #include <mysql.h>
 
 #include "crypt_private.h"
@@ -65,6 +66,8 @@ static ngx_uint_t ngx_http_auth_mysql_check_plain(ngx_http_request_t *r, ngx_str
 
 static ngx_uint_t ngx_http_auth_mysql_check_md5(ngx_http_request_t *r, ngx_str_t sent_password, ngx_str_t actual_password);
 
+static ngx_uint_t ngx_http_auth_mysql_check_sha1 (ngx_http_request_t * r, ngx_str_t sent_password, ngx_str_t actual_password);
+
 static ngx_uint_t ngx_http_auth_mysql_check_phpass(ngx_http_request_t *r, ngx_str_t sent_password, ngx_str_t actual_password);
 
 static ngx_int_t ngx_http_auth_mysql_set_realm(ngx_http_request_t *r,
@@ -95,6 +98,10 @@ static ngx_http_auth_mysql_enctype_t ngx_http_auth_mysql_enctypes[] = {
 		ngx_string("md5"),
 		ngx_http_auth_mysql_check_md5
 	},
+    {
+        ngx_string("sha1"),
+        ngx_http_auth_mysql_check_sha1
+    },
 	{
 		ngx_string("phpass"),
 		ngx_http_auth_mysql_check_phpass
@@ -495,6 +502,24 @@ ngx_http_auth_mysql_check_md5(ngx_http_request_t *r, ngx_str_t sent_password, ng
 	ngx_hex_dump(md5_str, md5_digest, MD5_DIGEST_LENGTH);
 	md5_str[2*MD5_DIGEST_LENGTH] = '\0';
 	return (ngx_strcmp(actual_password.data, md5_str) == 0)? NGX_OK : NGX_DECLINED;
+}
+
+static ngx_uint_t
+ngx_http_auth_mysql_check_sha1 (ngx_http_request_t * r,
+                ngx_str_t sent_password,
+                ngx_str_t actual_password)
+{
+  u_char sha1_str[2 * SHA_DIGEST_LENGTH + 1];
+  u_char sha1_digest[SHA_DIGEST_LENGTH];
+  ngx_sha1_t sha1;
+
+  ngx_sha1_init (&sha1);
+  ngx_sha1_update (&sha1, sent_password.data, sent_password.len);
+  ngx_sha1_final (sha1_digest, &sha1);
+  ngx_hex_dump (sha1_str, sha1_digest, SHA_DIGEST_LENGTH);
+  sha1_str[2 * SHA_DIGEST_LENGTH] = '\0';
+  return (ngx_strcmp (actual_password.data, sha1_str) ==
+      0) ? NGX_OK : NGX_DECLINED;
 }
 
 static void 
