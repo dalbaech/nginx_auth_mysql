@@ -24,7 +24,9 @@
 #ifdef TEST
 #include <stdio.h>
 #endif
-
+#define MD5_CBLOCK  64
+#define MD5_LBLOCK  (MD5_CBLOCK/4)
+#define MD5_DIGEST_LENGTH 16
 #define NGX_AUTH_MYSQL_PHPASS_HASH_LEN 64
 
 static char *itoa64 =

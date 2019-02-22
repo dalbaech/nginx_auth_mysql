@@ -16,6 +16,9 @@
 #include "crypt_private.h"
 
 #define PHPASS_ADDSLASHES 1
+#define MD5_CBLOCK  64
+#define MD5_LBLOCK  (MD5_CBLOCK/4)
+#define MD5_DIGEST_LENGTH 16
 
 /* Module context data */
 typedef struct {
@@ -537,8 +540,6 @@ phpass_addslashes(u_char *src, u_char *dest) {
 		switch (*source) {
 			case '\'':
 			case '\"':
-			case '\\':
-				*target++ = '\\';
 			default:
 				*target++ = *source;
 				break;
